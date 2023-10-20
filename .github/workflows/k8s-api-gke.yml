@@ -135,7 +135,7 @@ jobs:
       - name: configure values file
         id: setup-values-file
         run: |
-          cp .ci/${ENVIRONMENT_LOWER}-values.yaml .ci/values.yaml
+          cp .ci/${env.ENVIRONMENT_LOWER}-values.yaml .ci/values.yaml
           
       - name: make yaml cfg plain
         id: parseVars
