@@ -88,7 +88,7 @@ jobs:
           
           echo GKE_CLUSTER="cluster-gke-${ENVIRONMENT}"               >> $GITHUB_ENV
           echo PROJECT_ID="matrix-gke-${ENVIRONMENT}"                 >> $GITHUB_ENV
-          echo REGISTRY_HOSTNAME="gcr.io/${PROJECT_ID}"               >> $GITHUB_ENV
+          echo REGISTRY_HOSTNAME="gcr.io/matrix-gke-${ENVIRONMENT}"   >> $GITHUB_ENV
           echo WORKLOAD_IDENTITY_PROVIDER="projects/${"PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"       >> $GITHUB_ENV
           echo GKE_REGION="us-east1"                                  >> $GITHUB_ENV
           echo SERVICE_ACCOUNT="github-actions@matrix-gke-${ENVIRONMENT}.iam.gserviceaccount.com"                                                          >> $GITHUB_ENV
