@@ -172,7 +172,7 @@ jobs:
             .
             
       - name: docker push
-        run: docker push us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME}
+        run: docker push us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME} --all-tags
         
       - name: install helm tool
         uses: azure/setup-helm@v3
@@ -202,7 +202,7 @@ jobs:
             --namespace '${{ inputs.namespace }}' \
             --values '${{ inputs.values }}' \
             --set environment='${{ steps.configure-app.outputs.environment }}' \
-            --set image='us-east1-docker.pkg.dev/${PROJECT_ID}/{{env.APP_NAME}}/{{env.APP_NAME}}:${{ steps.configure-app.outputs.tag }}' \
+            --set image='us-east1-docker.pkg.dev/${{PROJECT_ID}}/gke-images/${{env.APP_NAME}}:${{ steps.configure-app.outputs.tag }}' \
             --set repository='${{ github.repository }}' \
             --set config='${{ steps.parseVars.outputs.result }}'
           rm -r .ci/values.yaml
