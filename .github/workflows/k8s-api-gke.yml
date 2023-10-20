@@ -46,7 +46,7 @@ jobs:
 
       - name: Install gcloud plugin
         run: |
-          gcloud components install gke-gcloud-auth-plugin -y
+          gcloud components install gke-gcloud-auth-plugin
 
       - name: dev
         if: ( github.ref_name != 'main' && github.ref_name != 'k8s-prd' && github.ref_name != 'hml' && github.ref_name != 'k8s-hml')
