@@ -1,0 +1,171 @@
+name: k8s Api Pipeline - Latest
+env:
+  CLONE_TOKEN: GIT_TOKEN_CUSTOM
+  PUBLISH_TOKEN: PACKAGES_TOKEN
+  HELM_VERSION: v3.9.2
+  CHART_REPOSITORY: 'Matrix-Energia/matrix.devops.template.charts.git'
+  CHART_REVISION: latest
+  CHART_PATH: charts
+  CHART_TYPE: api
+  YQ_VERSION: v4.2.0
+  YQ_BINARY: yq_linux_amd64
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        type: string
+        required: false
+        default: matrix-apps
+      values:
+        type: string
+        required: false
+        default: .ci/values.yaml
+      tokenName:
+        type: string
+        required: false
+        default: GIT_TOKEN
+jobs:
+  k8s-api:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.configure-app.outputs.environment }}
+      name: ${{ steps.configure-app.outputs.name }}
+      revision: ${{ steps.configure-app.outputs.name }}
+      image: ${{ steps.configure-app.outputs.image }}
+      tag: ${{ steps.configure-app.outputs.tag }}
+      kube_config: ${{ steps.configure-app.outputs.kube_config }}
+      config_b64: ${{ steps.parseVars.outputs.result }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets[env.CLONE_TOKEN] }}
+      - name: dev
+        if: ( github.ref_name != 'main' && github.ref_name != 'k8s-prd' && github.ref_name != 'hml' && github.ref_name != 'k8s-hml')
+        run: |
+          echo "ENVIRONMENT=DEV" >> $GITHUB_ENV
+          echo "APP_REVISION=${GITHUB_REF_NAME//\//-}" >> $GITHUB_ENV
+      - name: hml
+        if: github.ref_name == 'hml'
+        run: |
+          echo "ENVIRONMENT=HML" >> $GITHUB_ENV
+          echo "APP_REVISION=hml" >> $GITHUB_ENV
+      - name: hml-k8s
+        if: github.ref_name == 'k8s-hml'
+        run: |
+          echo "ENVIRONMENT=HML" >> $GITHUB_ENV
+          echo "APP_REVISION=hml" >> $GITHUB_ENV
+      - name: prd
+        if: github.ref_name == 'main'
+        run: |
+          echo "ENVIRONMENT=PRD" >> $GITHUB_ENV
+          echo "APP_REVISION=prd" >> $GITHUB_ENV
+      - name: prd-k8s
+        if: github.ref_name == 'k8s-prd'
+        run: |
+          echo "ENVIRONMENT=PRD" >> $GITHUB_ENV
+          echo "APP_REVISION=prd" >> $GITHUB_ENV
+      - name: set-vars
+        run: |
+          APP_NAME="${GITHUB_REPOSITORY/'Matrix-Energia/'/}"
+          APP_NAME="${APP_NAME/matrix./}"
+          APP_NAME="${APP_NAME//./-}"
+          ENVIRONMENT_LOWER="${ENVIRONMENT,,}"
+          REGISTRY_NAME="${ENVIRONMENT_LOWER}akscr.azurecr.io"
+          echo REGISTRY_NAME="${REGISTRY_NAME}"                       >> $GITHUB_ENV
+          echo REGISTRY_USR="MATRIX_${ENVIRONMENT}_ACR_USERNAME"      >> $GITHUB_ENV 
+          echo REGISTRY_PWD="MATRIX_${ENVIRONMENT}_ACR_PASSWORD"      >> $GITHUB_ENV 
+          echo ENVIRONMENT_LOWER="${ENVIRONMENT_LOWER}"               >> $GITHUB_ENV
+          echo APP_NAME="${APP_NAME}"                                 >> $GITHUB_ENV
+          echo APP_IMAGE="${REGISTRY_NAME}/${GITHUB_REPOSITORY,,}"    >> $GITHUB_ENV
+          echo APP_TAG="${GITHUB_SHA:0:8}-${GITHUB_RUN_NUMBER}"       >> $GITHUB_ENV
+          echo KUBE_CONFIG="MATRIX_${ENVIRONMENT}_AKS_KUBE_CONFIG"    >> $GITHUB_ENV
+      - name: import keyvault
+        id: import-keyvault
+        env:
+          AZ_USER: ${{ secrets.AKS_KV_USR }}
+          AZ_PWD: ${{ secrets.AKS_KV_PWD }}
+          AZ_TENANT: ${{ secrets.AKS_KV_TENANT}}
+        run: |
+          KEYVAULT="aks-matrix-${ENVIRONMENT_LOWER}"
+          az login --service-principal -u $AZ_USER -p $AZ_PWD --tenant $AZ_TENANT
+          az keyvault secret show --vault-name "${KEYVAULT}" --name "$APP_NAME" --query value -o tsv >> app-config.txt
+          az keyvault secret show --vault-name "${KEYVAULT}" --name "nexus-settings" --query value -o tsv >> nexus-settings.txt
+      - name: create settings.xml
+        run: |
+          cat nexus-settings.txt | base64 -d >> settings.xml
+      - name: configure app
+        id: configure-app
+        run: |
+          echo "environment=${{ env.ENVIRONMENT_LOWER }}" >> $GITHUB_OUTPUT
+          echo "name=${{ env.APP_NAME }}"                 >> $GITHUB_OUTPUT
+          echo "revision=${{ env.APP_REVISION }}"         >> $GITHUB_OUTPUT
+          echo "image=${{ env.APP_IMAGE }}"               >> $GITHUB_OUTPUT
+          echo "tag=${{ env.APP_TAG }}"                   >> $GITHUB_OUTPUT
+          echo "kube_config=${{ env.KUBE_CONFIG }}"       >> $GITHUB_OUTPUT
+      - name: configure values file
+        id: setup-values-file
+        run: |
+          cp .ci/${ENVIRONMENT_LOWER}-values.yaml .ci/values.yaml
+      - name: make yaml cfg plain
+        id: parseVars
+        run: |
+          wget -nv -q https://github.com/mikefarah/yq/releases/download/${{ env.YQ_VERSION }}/${{ env.YQ_BINARY }} -O yq
+          chmod +x yq
+          cat app-config.txt | base64 -d >> .content
+          S_ENCODING=$(file -b --mime-encoding .content)
+          D_ENCODING='UTF-8//TRANSLIT'
+          iconv -f ${S_ENCODING^^} -t ${D_ENCODING} .content -o .content
+          echo '.. | select(. == "*") | {(path | . as $x | (.[] | select((. | tag) == "!!int") |= (["[", ., "]"] | join(""))) | $x | join(".") | sub(".\[", "[")): .} ' > .expression
+          yq e --no-colors --no-doc --from-file .expression .content > .result
+          RESULT="$( cat .result | base64 -w0 )"
+          echo "result=${RESULT}" >> $GITHUB_OUTPUT
+          rm -r app-config.txt
+      - name: docker login
+        uses: Azure/docker-login@v1
+        with:
+          login-server: ${{ env.REGISTRY_NAME }}
+          username: ${{ secrets[env.REGISTRY_USR] }}
+          password: ${{ secrets[env.REGISTRY_PWD] }}
+      - name: docker build
+        run: |
+          sed -i "s/ENV_LOWER/${ENVIRONMENT_LOWER}/" Dockerfile
+          sed -i "s/APP_NAME/${APP_NAME}/" Dockerfile
+          docker build \
+            --build-arg ${{ inputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
+            -t "${{ env.APP_IMAGE }}:${{ env.APP_TAG }}" \
+            -t "${{ env.APP_IMAGE }}:latest" \
+            .
+      - name: docker push
+        run: docker push --all-tags ${{ env.APP_IMAGE }}
+      - name: connect to cluster
+        uses: Azure/k8s-set-context@v2
+        with:
+          kubeconfig: ${{ secrets[env.KUBE_CONFIG] }}
+      - name: install helm tool
+        uses: azure/setup-helm@v3
+        with:
+          version: ${{ env.HELM_VERSION }}
+      - name: clone helms
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.CHART_REPOSITORY }}
+          ref: ${{ env.CHART_REVISION }}
+          path: ${{ env.CHART_PATH }}
+          token: ${{ secrets[env.CLONE_TOKEN] }}
+      - name: install app
+        run: |
+          helm upgrade ${{ steps.configure-app.outputs.name }}-${{ steps.configure-app.outputs.revision }} \
+            ${{ env.CHART_PATH }}/${{ env.CHART_TYPE }} \
+            --atomic \
+            --install \
+            --wait \
+            --timeout 6m0s \
+            --namespace '${{ inputs.namespace }}' \
+            --values '${{ inputs.values }}' \
+            --set environment='${{ steps.configure-app.outputs.environment }}' \
+            --set image='${{ steps.configure-app.outputs.image }}:${{ steps.configure-app.outputs.tag }}' \
+            --set repository='${{ github.repository }}' \
+            --set config='${{ steps.parseVars.outputs.result }}'
+          rm -r .ci/values.yaml
