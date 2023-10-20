@@ -114,8 +114,8 @@ jobs:
 
       - name: Configure Docker
         run: |
-          gcloud auth configure-docker ${{ env.REGISTRY_HOSTNAME }}
-
+          gcloud auth configure-docker us-east1-docker.pkg.dev
+          
       - name: get secrets
         run: |
           gcloud secrets versions access latest --secret="secret-test-sutto" > app-config.txt
@@ -161,12 +161,12 @@ jobs:
           sed -i "s/APP_NAME/${APP_NAME}/" Dockerfile
           docker build \
             --build-arg ${{ inputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
-            -t "${{ env.REGISTRY_HOSTNAME }}/${{env.APP_NAME}}:${{ env.APP_TAG }}" \
-            -t "${{ env.REGISTRY_HOSTNAME }}/${{env.APP_NAME}}:latest" \
+            -t "us-east1-docker.pkg.dev/${PROJECT_ID}/{{env.APP_NAME}}/{{env.APP_NAME}}:${{ env.APP_TAG }}" \
+            -t "us-east1-docker.pkg.dev/${PROJECT_ID}/{{env.APP_NAME}}/{{env.APP_NAME}}:latest" \
             .
       - name: docker push
-        run: docker push --all-tags ${{ env.REGISTRY_HOSTNAME }}/${{env.APP_NAME}}
-
+        run: docker push --all-tags us-east1-docker.pkg.dev/${PROJECT_ID}/{{env.APP_NAME}}/{{env.APP_NAME}}
+        
       - name: install helm tool
         uses: azure/setup-helm@v3
         with:
@@ -195,7 +195,7 @@ jobs:
             --namespace '${{ inputs.namespace }}' \
             --values '${{ inputs.values }}' \
             --set environment='${{ steps.configure-app.outputs.environment }}' \
-            --set image='${{ steps.configure-app.outputs.image }}:${{ steps.configure-app.outputs.tag }}' \
+            --set image='us-east1-docker.pkg.dev/${PROJECT_ID}/{{env.APP_NAME}}/{{env.APP_NAME}}:${{ steps.configure-app.outputs.tag }}' \
             --set repository='${{ github.repository }}' \
             --set config='${{ steps.parseVars.outputs.result }}'
           rm -r .ci/values.yaml
