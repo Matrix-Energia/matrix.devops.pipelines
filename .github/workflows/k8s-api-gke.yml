@@ -167,7 +167,7 @@ jobs:
           sed -i "s/APP_NAME/${APP_NAME}/" Dockerfile
           docker build \
             --build-arg ${{ inputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
-            -t "us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME}:${{ env.APP_TAG }}" \\
+            -t "us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME}:${{ env.APP_TAG }}" \
             -t "us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME}:latest" \
             .
             
