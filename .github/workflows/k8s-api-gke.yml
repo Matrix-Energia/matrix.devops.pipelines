@@ -161,11 +161,11 @@ jobs:
           sed -i "s/APP_NAME/${APP_NAME}/" Dockerfile
           docker build \
             --build-arg ${{ inputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
-            -t "us-east1-docker.pkg.dev/${PROJECT_ID}/{{env.APP_NAME}}/{{env.APP_NAME}}:${{ env.APP_TAG }}" \
-            -t "us-east1-docker.pkg.dev/${PROJECT_ID}/{{env.APP_NAME}}/{{env.APP_NAME}}:latest" \
+            -t "us-east1-docker.pkg.dev/${PROJECT_ID}/${APP_NAME}/${APP_NAME}:${{ env.APP_TAG }}" \
             .
+            
       - name: docker push
-        run: docker push --all-tags us-east1-docker.pkg.dev/${PROJECT_ID}/{{env.APP_NAME}}/{{env.APP_NAME}}
+        run: docker push us-east1-docker.pkg.dev/${PROJECT_ID}/${APP_NAME}/${APP_NAME}
         
       - name: install helm tool
         uses: azure/setup-helm@v3
