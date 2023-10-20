@@ -98,7 +98,7 @@ jobs:
 
           echo ENVIRONMENT_LOWER="${ENVIRONMENT_LOWER}"               >> $GITHUB_ENV
           echo APP_NAME="${APP_NAME}"                                 >> $GITHUB_ENV
-          echo APP_IMAGE="${REGISTRY_NAME}/${GITHUB_REPOSITORY,,}"    >> $GITHUB_ENV
+          echo APP_IMAGE="${GITHUB_REPOSITORY,,}"    >> $GITHUB_ENV
           echo APP_TAG="${GITHUB_SHA:0:8}-${GITHUB_RUN_NUMBER}"       >> $GITHUB_ENV
   
 
@@ -161,9 +161,9 @@ jobs:
           sed -i "s/APP_NAME/${APP_NAME}/" Dockerfile
           docker build \
             --build-arg ${{ inputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
+            -t "${{ env.APP_IMAGE }}:${{ env.APP_TAG }}" \
             -t "${{ env.APP_IMAGE }}:latest" \
             .
-        #-t "${{ env.APP_IMAGE }}:${{ env.APP_TAG }}" \
       - name: docker push
         run: docker push --all-tags ${{ env.APP_IMAGE }}
 
