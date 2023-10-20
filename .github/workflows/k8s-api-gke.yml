@@ -56,31 +56,38 @@ jobs:
         run: |
           echo "ENVIRONMENT=DEV" >> $GITHUB_ENV
           echo "APP_REVISION=${GITHUB_REF_NAME//\//-}" >> $GITHUB_ENV
-          echo "PROJECT_NUMBER=62196059690" >> $GITHUB_ENV
+          echo "PROJECT_NUMBER=62196059690"            >> $GITHUB_ENV
+          echo GKE_REGION="us-east1-b"                 >> $GITHUB_ENV
       - name: hml
         if: github.ref_name == 'hml'
         run: |
           echo "ENVIRONMENT=HML" >> $GITHUB_ENV
           echo "APP_REVISION=hml" >> $GITHUB_ENV
           echo "PROJECT_NUMBER=892092479263" >> $GITHUB_ENV
+          echo GKE_REGION="us-east1-b"                 >> $GITHUB_ENV
       - name: hml-k8s
         if: github.ref_name == 'k8s-hml'
         run: |
           echo "ENVIRONMENT=HML" >> $GITHUB_ENV
           echo "APP_REVISION=hml" >> $GITHUB_ENV
           echo "PROJECT_NUMBER=892092479263" >> $GITHUB_ENV
+          echo GKE_REGION="us-east1-b"       >> $GITHUB_ENV
       - name: prd
         if: github.ref_name == 'main'
         run: |
           echo "ENVIRONMENT=PRD" >> $GITHUB_ENV
           echo "APP_REVISION=prd" >> $GITHUB_ENV
           echo "PROJECT_NUMBER=733870648638" >> $GITHUB_ENV
+          echo GKE_REGION="us-east1"       >> $GITHUB_ENV
+          
       - name: prd-k8s
         if: github.ref_name == 'k8s-prd'
         run: |
           echo "ENVIRONMENT=PRD" >> $GITHUB_ENV
           echo "APP_REVISION=prd" >> $GITHUB_ENV
           echo "PROJECT_NUMBER=733870648638" >> $GITHUB_ENV
+          echo GKE_REGION="us-east1"       >> $GITHUB_ENV
+          
       - name: set-vars
         run: |
           APP_NAME="${GITHUB_REPOSITORY/'Matrix-Energia/'/}"
@@ -93,7 +100,6 @@ jobs:
           echo PROJECT_ID="matrix-gke-${ENVIRONMENT_LOWER}"                 >> $GITHUB_ENV
           echo REGISTRY_HOSTNAME="gcr.io/${PROJECT_ID}"   >> $GITHUB_ENV
           echo WORKLOAD_IDENTITY_PROVIDER="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"       >> $GITHUB_ENV
-          echo GKE_REGION="us-east1"                                  >> $GITHUB_ENV
           echo SERVICE_ACCOUNT="github-actions@matrix-gke-${ENVIRONMENT_LOWER}.iam.gserviceaccount.com"                                                          >> $GITHUB_ENV
 
           echo ENVIRONMENT_LOWER="${ENVIRONMENT_LOWER}"               >> $GITHUB_ENV
