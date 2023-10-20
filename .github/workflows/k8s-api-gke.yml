@@ -113,7 +113,6 @@ jobs:
           gcloud auth configure-docker ${{ env.REGISTRY_HOSTNAME }}
 
       - name: get secrets
-        id: setup-values-file
         run: |
           gcloud secrets versions access latest --secret="secret-test-sutto" > app-config.txt
           gcloud secrets versions access latest --secret="nexus-settings" > nexus-settings.txt
