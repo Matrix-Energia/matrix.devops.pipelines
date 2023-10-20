@@ -165,7 +165,7 @@ jobs:
             -t "${{ env.APP_IMAGE }}:latest" \
             .
       - name: docker push
-        run: docker push --all-tags ${{ env.REGISTRY_HOSTNAME }}/${{APP_NAME }}
+        run: docker push --all-tags ${{ env.REGISTRY_HOSTNAME }}/${{env.APP_NAME}}
 
       - name: install helm tool
         uses: azure/setup-helm@v3
