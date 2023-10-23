@@ -124,7 +124,7 @@ jobs:
           
       - name: get secrets
         run: |
-          gcloud secrets versions access latest --secret="secret-test-sutto" > app-config.txt
+          gcloud secrets versions access latest --secret="$APP_NAME" > app-config.txt
           gcloud secrets versions access latest --secret="nexus-settings" > nexus-settings.txt
 
       - name: create settings.xml
