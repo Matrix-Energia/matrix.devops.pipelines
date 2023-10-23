@@ -118,7 +118,7 @@ jobs:
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ env.SERVICE_ACCOUNT }}
 
-      - name: Configure Docker
+      - name: configure Docker
         run: |
           gcloud auth configure-docker us-east1-docker.pkg.dev
           
@@ -187,7 +187,7 @@ jobs:
           path: ${{ env.CHART_PATH }}
           token: ${{ secrets[env.CLONE_TOKEN] }}
 
-      - name: Deploy to GKE
+      - name: get kubeconfig
         run: |
           gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --region ${{ env.GKE_REGION }} --project ${{ env.PROJECT_ID }}
 
@@ -207,5 +207,5 @@ jobs:
             --set config='${{ steps.parseVars.outputs.result }}'
           rm -r .ci/values.yaml
 
-      - name: Verify deployment
+      - name: verify deployment
         run: kubectl rollout status deployment/${{ env.APP_NAME }} -n ${{ inputs.namespace }} --timeout=100s
