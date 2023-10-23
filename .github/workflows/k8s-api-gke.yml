@@ -193,7 +193,7 @@ jobs:
 
       - name: install app
         run: |
-          helm upgrade ${{ steps.configure-app.outputs.name }}-${{ steps.configure-app.outputs.revision }} \
+          helm upgrade ${{ steps.configure-app.outputs.name }} \
             ${{ env.CHART_PATH }}/${{ env.CHART_TYPE }} \
             --atomic \
             --install \
