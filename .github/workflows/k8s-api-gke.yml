@@ -206,6 +206,3 @@ jobs:
             --set repository='${{ github.repository }}' \
             --set config='${{ steps.parseVars.outputs.result }}'
           rm -r .ci/values.yaml
-
-      - name: verify deployment
-        run: kubectl rollout status deployment/${{ env.APP_NAME }} -n ${{ inputs.namespace }} --timeout=100s
