@@ -139,7 +139,7 @@ jobs:
 
       - name: create secret on secret manager
         run: |
-         gcloud secrets create "$APP_NAME"  --data-file=kvsecrets.txt       
+         gcloud secrets create "$APP_NAME"  --data-file=kv-secrets.txt       
       
       - name: get secrets
         run: |
