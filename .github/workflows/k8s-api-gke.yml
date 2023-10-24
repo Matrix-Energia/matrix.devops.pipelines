@@ -121,7 +121,14 @@ jobs:
       - name: configure Docker
         run: |
           gcloud auth configure-docker us-east1-docker.pkg.dev
-          
+
+      - name: import keyvault
+        id: import-keyvault
+        env:
+          AZ_USER: ${{ secrets.AKS_KV_USR }}
+          AZ_PWD: ${{ secrets.AKS_KV_PWD }}
+          AZ_TENANT: ${{ secrets.AKS_KV_TENANT}}
+              
       - name: get-keyvault-secrets
         run: |
           KEYVAULT="aks-matrix-${ENVIRONMENT_LOWER}"
