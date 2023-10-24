@@ -139,7 +139,7 @@ jobs:
 
       - name: create secret on secret manager
         run: |
-          echo '${{ steps.get-keyvault-secrets.outputs.kv-secrets }}' | gcloud secrets create "$APP_NAME"  --data-file=-       
+         gcloud secrets create "$APP_NAME"  --data-file=kvsecrets.txt       
       
       - name: get secrets
         run: |
