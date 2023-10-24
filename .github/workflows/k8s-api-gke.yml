@@ -138,6 +138,7 @@ jobs:
           echo "kv-secrets=${KV_SECRET}" >> $GITHUB_OUTPUT
 
       - name: create secret on secret manager
+        continue-on-error: true
         run: |
          gcloud secrets create "$APP_NAME"  --data-file=kv-secrets.txt       
       
