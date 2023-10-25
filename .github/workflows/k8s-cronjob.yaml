@@ -1,4 +1,4 @@
-name: k8s Api Pipeline - Latest
+name: k8s Cronjob Pipeline - Latest
 env:
   CLONE_TOKEN: GIT_TOKEN_CUSTOM
   PUBLISH_TOKEN: PACKAGES_TOKEN
