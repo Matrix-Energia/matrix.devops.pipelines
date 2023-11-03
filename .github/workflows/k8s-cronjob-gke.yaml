@@ -43,7 +43,7 @@ jobs:
           token: ${{ secrets[env.CLONE_TOKEN] }}
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v1'
-        
+
       - name: Install gcloud plugin
         run: |
             gcloud components install gke-gcloud-auth-plugin    
@@ -84,30 +84,33 @@ jobs:
             echo GKE_REGION="us-east1"       >> $GITHUB_ENV
       - name: set-vars
         run: |
-            APP_NAME="${GITHUB_REPOSITORY/'Matrix-Energia/'/}"
-            APP_NAME="${APP_NAME/matrix./}"
-            APP_NAME="${APP_NAME//./-}"
-            ENVIRONMENT_LOWER="${ENVIRONMENT,,}"
-            PROJECT_ID="matrix-gke-${ENVIRONMENT_LOWER}"
-            
-            echo GKE_CLUSTER="cluster-gke-${ENVIRONMENT_LOWER}"               >> $GITHUB_ENV
-            echo PROJECT_ID="matrix-gke-${ENVIRONMENT_LOWER}"                 >> $GITHUB_ENV
-            echo REGISTRY_HOSTNAME="gcr.io/${PROJECT_ID}"   >> $GITHUB_ENV
-            echo WORKLOAD_IDENTITY_PROVIDER="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"       >> $GITHUB_ENV
-            echo SERVICE_ACCOUNT="github-actions@matrix-gke-${ENVIRONMENT_LOWER}.iam.gserviceaccount.com"                                                          >> $GITHUB_ENV
+          APP_NAME="${GITHUB_REPOSITORY/'Matrix-Energia/'/}"
+          APP_NAME="${APP_NAME/matrix./}"
+          APP_NAME="${APP_NAME//./-}"
+          ENVIRONMENT_LOWER="${ENVIRONMENT,,}"
+          PROJECT_ID="matrix-gke-${ENVIRONMENT_LOWER}"
+          
+          echo GKE_CLUSTER="cluster-gke-${ENVIRONMENT_LOWER}"               >> $GITHUB_ENV
+          echo PROJECT_ID="matrix-gke-${ENVIRONMENT_LOWER}"                 >> $GITHUB_ENV
+          echo REGISTRY_HOSTNAME="gcr.io/${PROJECT_ID}"   >> $GITHUB_ENV
+          echo WORKLOAD_IDENTITY_PROVIDER="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"       >> $GITHUB_ENV
+          echo SERVICE_ACCOUNT="github-actions@matrix-gke-${ENVIRONMENT_LOWER}.iam.gserviceaccount.com"                                                          >> $GITHUB_ENV
 
-            echo ENVIRONMENT_LOWER="${ENVIRONMENT_LOWER}"               >> $GITHUB_ENV
-            echo APP_NAME="${APP_NAME}"                                 >> $GITHUB_ENV
-            echo APP_IMAGE="${GITHUB_REPOSITORY,,}"    >> $GITHUB_ENV
-            echo APP_TAG="${GITHUB_SHA:0:8}-${GITHUB_RUN_NUMBER}"       >> $GITHUB_ENV
+          echo ENVIRONMENT_LOWER="${ENVIRONMENT_LOWER}"               >> $GITHUB_ENV
+          echo APP_NAME="${APP_NAME}"                                 >> $GITHUB_ENV
+          echo APP_IMAGE="${GITHUB_REPOSITORY,,}"    >> $GITHUB_ENV
+          echo APP_TAG="${GITHUB_SHA:0:8}-${GITHUB_RUN_NUMBER}"       >> $GITHUB_ENV
+  
+
       - name: Checkout
-        uses: actions/checkout@v3        
+        uses: actions/checkout@v3
+
       - id: "auth"
         name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v1"
         with:
-            workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
-            service_account: ${{ env.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
 
       - name: configure Docker
         run: |
