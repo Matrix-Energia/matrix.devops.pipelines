@@ -35,6 +35,9 @@ jobs:
       tag: ${{ steps.configure-app.outputs.tag }}
       kube_config: ${{ steps.configure-app.outputs.kube_config }}
       config_b64: ${{ steps.parseVars.outputs.result }}
+    permissions:
+      contents: 'read'
+      id-token: 'write'  
     steps:
       - name: checkout
         uses: actions/checkout@v3
