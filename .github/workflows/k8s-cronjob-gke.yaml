@@ -157,25 +157,23 @@ jobs:
           cat config.yaml >> .ci/values.yaml
           cat .ci/values.yaml
           rm -r app-config.txt
-      - name: docker login
-        uses: Azure/docker-login@v1
-        with:
-          login-server: ${{ env.REGISTRY_NAME }}
-          username: ${{ secrets[env.REGISTRY_USR] }}
-          password: ${{ secrets[env.REGISTRY_PWD] }}
+          
+      - name: configure Docker
+        run: |
+          gcloud auth configure-docker us-east1-docker.pkg.dev
       - name: docker build
         run: |
             sed -i "s/ENV_LOWER/${ENVIRONMENT_LOWER}/" Dockerfile
             sed -i "s/APP_NAME/${APP_NAME}/" Dockerfile
             docker build \
-                --build-arg ${{ inputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
-                -t "us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME}:${{ env.APP_TAG }}" \
-                -t "us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME}:latest" \
-                .
-
+              --build-arg ${{ inputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
+              -t "us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME}:${{ env.APP_TAG }}" \
+              -t "us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME}:latest" \
+              .
+              
       - name: docker push
-        run: docker push us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME} --all-tags
-      
+        run: docker push us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME} --all-tags     
+        
       - name: install helm tool
         uses: azure/setup-helm@v3
         with:
