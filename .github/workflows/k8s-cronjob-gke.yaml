@@ -192,7 +192,7 @@ jobs:
       
       - name: install app
         run: |
-          helm upgrade ${{ steps.configure-app.outputs.name }}-${{ steps.configure-app.outputs.revision }} \
+          helm upgrade ${{ steps.configure-app.outputs.name }} \
             ${{ env.CHART_PATH }}/${{ env.CHART_TYPE }} \
             --atomic \
             --install \
@@ -201,6 +201,7 @@ jobs:
             --namespace '${{ inputs.namespace }}' \
             --values '${{ inputs.values }}' \
             --set environment='${{ steps.configure-app.outputs.environment }}' \
-            --set image='${{ steps.configure-app.outputs.image }}:${{ steps.configure-app.outputs.tag }}' \
-            --set repository='${{ github.repository }}' \ 
+            --set image='us-east1-docker.pkg.dev/${{env.PROJECT_ID}}/gke-images/${{env.APP_NAME}}:${{ steps.configure-app.outputs.tag }}' \
+            --set repository='${{ github.repository }}' \
+            --set config='${{ steps.parseVars.outputs.result }}'
           rm -r .ci/values.yaml
