@@ -220,5 +220,5 @@ jobs:
             --timeout 6m0s \
             --namespace '${{ inputs.namespace }}' \
             --set environment='${{env.ENVIRONMENT_LOWER}}' \
-            --set image='us-east1-docker.pkg.dev/${{env.PROJECT_ID}}/gke-images/${{env.APP_NAME}}:${{ steps.configure-app.outputs.tag }}' \
+            --set image='us-east1-docker.pkg.dev/${{env.PROJECT_ID}}/gke-images/${{env.APP_NAME}}:${{ env.APP_TAG }}' \
             --set repository='${{ github.repository }}' 
