@@ -3,7 +3,7 @@ name: k8s SWA Pipeline - Latest
 env:
   HELM_VERSION: v3.9.2
   CHART_REVISION: latest
-  CHART_PATH: _CHARTS_
+  CHART_PATH: charts
   CHART_TYPE: webpage
   PIPELINE_REVISION: latest
   PIPELINE_PATH: _PIPELINE_
