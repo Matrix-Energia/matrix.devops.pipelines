@@ -4,7 +4,7 @@ env:
   HELM_VERSION: v3.9.2
   CHART_REVISION: latest
   CHART_PATH: charts
-  CHART_TYPE: webpage
+  CHART_TYPE: gke-webpage
   PIPELINE_REVISION: latest
   PIPELINE_PATH: _PIPELINE_
   DOCKERFILE_PATH: Dockerfiles/swa
