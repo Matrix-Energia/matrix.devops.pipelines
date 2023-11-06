@@ -219,9 +219,6 @@ jobs:
             --wait \
             --timeout 6m0s \
             --namespace '${{ inputs.namespace }}' \
-            --values '${{ inputs.values }}' \
-            --set environment='${{ steps.configure-app.outputs.environment }}' \
+            --set environment='${{ENVIRONMENT_LOWER}}' \
             --set image='us-east1-docker.pkg.dev/${{env.PROJECT_ID}}/gke-images/${{env.APP_NAME}}:${{ steps.configure-app.outputs.tag }}' \
-            --set repository='${{ github.repository }}' \
-            --set config='${{ steps.parseVars.outputs.result }}'
-          rm -r .ci/values.yaml
+            --set repository='${{ github.repository }}' 
