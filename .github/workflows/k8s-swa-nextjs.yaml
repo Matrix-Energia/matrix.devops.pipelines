@@ -156,8 +156,6 @@ jobs:
       - name: build application
         run: |
           ${{ inputs.build-command }}
-          echo "Output Files: "
-          ls -lah ${{ env.OUT_DIR }}
       - name: docker build
         run: |
           docker build \
