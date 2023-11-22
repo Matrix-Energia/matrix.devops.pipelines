@@ -134,16 +134,18 @@ jobs:
           AZ_PWD: ${{ secrets.AKS_KV_PWD }}
           AZ_TENANT: ${{ secrets.AKS_KV_TENANT}}
         run: |
-          KEYVAULT="aks-${ENVIRONMENT_LOWER}"
+          KEYVAULT="aks-matrix-${ENVIRONMENT_LOWER}"
           rm -rf app-config.txt
           az login --service-principal -u $AZ_USER -p $AZ_PWD --tenant $AZ_TENANT
           az keyvault secret show --vault-name "${KEYVAULT}" --name "$APP_NAME" --query value -o tsv >> app-config.txt
-          cat app-config.txt
+          az keyvault secret show --vault-name "${KEYVAULT}" --name "elastic-config" --query value -o tsv >> apm-config.txt
       - name: create .env
         run: |
           rm -rf .env
-          cat app-config.txt | base64 -d >> .env
-          cat .env
+          echo "ELASTIC_APM_SERVICE_NAME=${{ env.APP_NAME }}-${{ env.APP_REVISION }}" > app-name.txt
+          cat apm-config.txt | base64 -d >> apm.txt
+          cat app-config.txt | base64 -d >> app.txt
+          sed -n 'p' apm.txt app-name.txt app.txt > .env 
       - name: create .npmrc
         run: |
           rm -rf .npmrc
