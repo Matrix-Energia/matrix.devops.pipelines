@@ -1,8 +1,7 @@
-FROM nginx:stable-alpine
-ADD nginx.conf /etc/nginx
-RUN rm -rf /etc/nginx/conf.d/default.conf
-ADD default.conf /etc/nginx/conf.d
-WORKDIR /usr/share/nginx/html
-RUN rm -rf ./* 
-COPY . ./
-CMD [ "nginx", "-g", "daemon off;" ]
+FROM node:18-buster as builder
+RUN mkdir -p /usr/src/next-nginx
+WORKDIR /usr/src/next-nginx
+COPY . .
+RUN npm install && npm ci && npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
