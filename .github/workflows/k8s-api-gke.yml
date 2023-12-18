@@ -81,7 +81,7 @@ jobs:
           echo GKE_REGION="us-east1"       >> $GITHUB_ENV
           
       - name: prd-k8s
-        if: github.ref_name == 'k8s-prd'
+        if: github.ref_name == 'k8s-prd' || contains(github.ref_name, 'prd')
         run: |
           echo "ENVIRONMENT=PRD" >> $GITHUB_ENV
           echo "APP_REVISION=prd" >> $GITHUB_ENV
