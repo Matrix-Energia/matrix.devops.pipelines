@@ -190,6 +190,10 @@ jobs:
       - name: get kubeconfig
         run: |
           gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --region ${{ env.GKE_REGION }} --project ${{ env.PROJECT_ID }}
+          
+      - name: service account workload identity
+        run: |
+          gcloud iam service-accounts create $APP_NAME
 
       - name: install app
         run: |
@@ -206,3 +210,8 @@ jobs:
             --set repository='${{ github.repository }}' \
             --set config='${{ steps.parseVars.outputs.result }}'
           rm -r .ci/values.yaml
+
+      - name: Workload Identity binding
+        run: |
+          gcloud iam service-accounts add-iam-policy-binding $APP_NAME@${{ env.PROJECT_ID }}.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:${{ env.PROJECT_ID }}.svc.id.goog[${{ inputs.namespace }}/$APP_NAME]"
+          
