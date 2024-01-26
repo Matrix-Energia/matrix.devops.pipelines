@@ -76,10 +76,10 @@ jobs:
         with:
           version: '>= 390.0.0'
 
-      - name: 'Use gcloud CLI'
+      - name: 'Use gcloud cli'
         run: 'gcloud info'
  
-      - name: Set Project ID
+      - name: Set project id
         run: gcloud config set project ${{ env.PROJECT_ID }}
 
       - name: Check if Repository exists

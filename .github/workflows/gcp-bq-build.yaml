@@ -1,0 +1,147 @@
+name: Deploy BQ Tables and Procedures - latest
+
+env:
+  CLONE_TOKEN: GIT_TOKEN_CUSTOM
+  PUBLISH_TOKEN: PACKAGES_TOKEN
+
+on:
+  workflow_call:
+
+jobs:
+  bq-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets[env.CLONE_TOKEN] }}  
+
+      - name: Setup Python Version
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8 # Install the python version needed
+
+      - name: Install Google Artifact py dependencies
+        run: |
+          python -m pip install --upgrade keyring
+          python -m pip install --upgrade keyrings.google-artifactregistry-auth
+
+      - name: Dev
+        if: ( github.ref_name != 'main' && github.ref_name != 'hml') || contains(github.ref_name, 'dev')
+        run: |
+          echo ENVIRONMENT="dev"                                                      >> $GITHUB_ENV
+          echo PROJECT_NUMBER="202162360786"                                          >> $GITHUB_ENV
+          echo PROJECT_ID="matrixx-plataforma-dados-dev"                              >> $GITHUB_ENV
+
+      - name: Hml
+        if: ( github.ref_name != 'main' && github.ref_name != 'dev') || contains(github.ref_name, 'hml')
+        run: |
+          echo ENVIRONMENT="hml"                                                      >> $GITHUB_ENV
+          echo PROJECT_NUMBER="961402051661"                                          >> $GITHUB_ENV
+          echo PROJECT_ID="matrix-plataforma-dados-hml"                               >> $GITHUB_ENV
+
+      - name: Prd
+        if: ( github.ref_name != 'hml' && github.ref_name != 'dev') || contains(github.ref_name, 'main')
+        run: |
+          echo ENVIRONMENT="prd"                                                      >> $GITHUB_ENV
+          echo PROJECT_NUMBER="683636317110"                                          >> $GITHUB_ENV
+          echo PROJECT_ID="matrix-platadorma-dados-prd"                               >> $GITHUB_ENV
+
+      - name: Set vars
+        run: |
+          echo WORKLOAD_IDENTITY_PROVIDER="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"   >> $GITHUB_ENV
+          echo SERVICE_ACCOUNT="github-actions@${PROJECT_ID}.iam.gserviceaccount.com"       >> $GITHUB_ENV
+          echo REPOSITORY_REGION="us-east1"                                                 >> $GITHUB_ENV
+          echo REPOSITORY_NAME="mtx-dados-py-repo"                                          >> $GITHUB_ENV
+
+      - name: Authenticate to Google Cloud
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          version: '>= 390.0.0'
+
+      - name: 'Use gcloud cli'
+        run: 'gcloud info'
+ 
+      - name: Set project id
+        run: gcloud config set project ${{ env.PROJECT_ID }}
+
+      - name: Keyring list backends
+        run: keyring --list-backends
+      
+      - name: List settings from Artifact Repository
+        run: |
+          gcloud artifacts print-settings python \
+            --project=${{ env.PROJECT_ID }} \
+            --repository=${{ env.REPOSITORY_NAME }} \
+            --location=${{ env.REPOSITORY_REGION }}
+
+      - name: Install `sql-templated` lib from Artifact Repository
+        run: |
+          python -m pip install --upgrade \
+            --extra-index-url "https://${{ env.REPOSITORY_REGION }}-python.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/simple/" \
+            sql-templated
+
+      - name: Get changed files
+        uses: jitterbit/get-changed-files@v1
+        id: changed-files
+        with:
+          format: space-delimited
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Processing BQ Tables Files
+        run: |
+          # ONLY CREATED OR MODIFIED
+          content_arr=(${{ steps.changed-files.outputs.added_modified }})
+          BQ_FILES=$(echo ${content_arr[@]} | sed 's/ /\n/g' | grep -E '.*([sql|SQL]\/tables).*\.sql') || echo ""
+          
+          # ALL FILES IN REPO
+          # BQ_FILES=$(find . -regextype posix-egrep -iregex ".*(sql\/tables).*\.sql" -print)
+
+          printf "BQ FILES: [%s]\n" "$BQ_FILES"          
+          for i in $BQ_FILES; do
+
+            printf "file path: [%s]\n" "$i"
+
+            templated_sql=$(sql-templated \
+              --project-id ${{ env.PROJECT_ID }} \
+              --project-number ${{ env.PROJECT_NUMBER }} \
+              --environment ${{ env.ENVIRONMENT }} \
+              --file-path ${i})
+            
+            bq query --use_legacy_sql=false "${templated_sql}"
+            
+          done
+
+      - name: Processing BQ Procedures Files
+        run: |
+          # ONLY CREATED OR MODIFIED
+          # content_arr=(${{ steps.changed-files.outputs.added_modified }})
+          # BQ_FILES=$(echo ${content_arr[@]} | sed 's/ /\n/g' | grep -E '.*([sql|SQL]\/procedures).*\.sql') || echo ""
+          
+          # ALL FILES IN REPO
+          BQ_FILES=$(find . -regextype posix-egrep -iregex ".*(sql\/procedures).*\.sql" -print)
+
+          printf "BQ FILES: [%s]\n" "$BQ_FILES"
+          for i in $BQ_FILES; do
+
+            printf "file path: [%s]\n" "$i"
+
+            templated_sql=$(sql-templated \
+              --project-id ${{ env.PROJECT_ID }} \
+              --project-number ${{ env.PROJECT_NUMBER }} \
+              --environment ${{ env.ENVIRONMENT }} \
+              --file-path ${i})
+            
+            bq query --use_legacy_sql=false "${templated_sql}"
+
+          done
