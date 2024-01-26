@@ -82,9 +82,9 @@ jobs:
       - name: Check if Repository exists
         id: check-repo
         run: |
-          if [[ gcloud artifacts repositories list \
-                --location=${{ env.REPOSITORY_REGION }} \
-                --format=text | grep -q ${{ env.REPOSITORY_NAME }}  ]]; then
+          if gcloud artifacts repositories list \
+              --location=${{ env.REPOSITORY_REGION }} \
+              --format=text | grep -q ${{ env.REPOSITORY_NAME }}; then
             echo "Repository found"
             aux = true
           else
