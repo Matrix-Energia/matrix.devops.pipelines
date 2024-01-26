@@ -82,18 +82,19 @@ jobs:
       - name: Check if Repository exists
         id: check-repo
         run: |
-          aux=$( gcloud artifacts repositories list \
-            --location=${{ env.REPOSITORY_REGION }} \
-            --format=text | \
-            grep -q ${{ env.REPOSITORY_NAME }} \
-            && echo 1 || echo 0)
-          
-          printf "aux: [%s]\n" "$aux"   
-          
+          if [[ gcloud artifacts repositories list \
+                --location=${{ env.REPOSITORY_REGION }} \
+                --format=text | grep -q ${{ env.REPOSITORY_NAME }}  ]]; then
+            echo "Repository found"
+            aux = true
+          else
+            echo "Repository not found"
+            aux = false
+          fi
           echo "REPO_EXISTS=$aux" >> "$GITHUB_OUTPUT"
 
       - name: Create Repository
-        if: ${{ steps.check-repo.outputs.REPO_EXISTS == '0' }}
+        if: "${{ ! steps.check-repo.outputs.REPO_EXISTS }}"
         run: |
           echo ${{ steps.check-repo.outputs.REPO_EXISTS }}
           gcloud artifacts repositories create ${{ env.REPOSITORY_NAME }} \
