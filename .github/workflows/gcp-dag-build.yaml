@@ -8,7 +8,7 @@ on:
   workflow_call:
 
 jobs:
-  dags-build:
+  dag-build:
     runs-on: ubuntu-latest
     permissions:
       contents: "read"
