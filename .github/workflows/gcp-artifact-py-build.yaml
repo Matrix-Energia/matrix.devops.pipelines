@@ -1,9 +1,7 @@
 name: Deploy Python Lib to Artifact Registry Pipeline - latest
-
 env:
   CLONE_TOKEN: GIT_TOKEN_CUSTOM
   PUBLISH_TOKEN: PACKAGES_TOKEN
-
 on:
   workflow_call:
     inputs:
@@ -11,7 +9,6 @@ on:
         type: string
         required: false
         default: 3.8
-
 jobs:
   gcp-artifact-py-build:
     runs-on: ubuntu-latest

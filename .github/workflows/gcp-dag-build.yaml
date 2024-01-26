@@ -1,12 +1,9 @@
 name: Deploy DAGs on Google Cloud Composer - latest
-
 env:
   CLONE_TOKEN: GIT_TOKEN_CUSTOM
   PUBLISH_TOKEN: PACKAGES_TOKEN
-
 on:
   workflow_call:
-
 jobs:
   dag-build:
     runs-on: ubuntu-latest

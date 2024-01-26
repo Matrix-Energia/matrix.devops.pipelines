@@ -1,12 +1,14 @@
 name: Deploy BQ Tables and Procedures - latest
-
 env:
   CLONE_TOKEN: GIT_TOKEN_CUSTOM
   PUBLISH_TOKEN: PACKAGES_TOKEN
-
 on:
   workflow_call:
-
+    inputs:
+      only_modified_files:
+        type: boolean
+        required: false
+        default: true
 jobs:
   bq-build:
     runs-on: ubuntu-latest
@@ -101,13 +103,14 @@ jobs:
       - name: Processing BQ Tables Files
         run: |
           # ONLY CREATED OR MODIFIED
-          content_arr=(${{ steps.changed-files.outputs.added_modified }})
-          BQ_FILES=$(echo ${content_arr[@]} | sed 's/ /\n/g' | grep -E '.*([sql|SQL]\/tables).*\.sql') || echo ""
-          
-          # ALL FILES IN REPO
-          # BQ_FILES=$(find . -regextype posix-egrep -iregex ".*(sql\/tables).*\.sql" -print)
+          if [[ ${{ inputs.only_modified_files }} == true ]]; then            
+            content_arr=(${{ steps.changed-files.outputs.added_modified }})
+            BQ_FILES=$(echo ${content_arr[@]} | sed 's/ /\n/g' | grep -E '.*([sql|SQL]\/tables).*\.sql') || echo ""
+          else
+            BQ_FILES=$(find . -regextype posix-egrep -iregex ".*(sql\/tables).*\.sql" -print)
+          fi
 
-          printf "BQ FILES: [%s]\n" "$BQ_FILES"          
+          printf "BQ FILES: [%s]\n" "$BQ_FILES"
           for i in $BQ_FILES; do
 
             printf "file path: [%s]\n" "$i"
@@ -125,11 +128,12 @@ jobs:
       - name: Processing BQ Procedures Files
         run: |
           # ONLY CREATED OR MODIFIED
-          # content_arr=(${{ steps.changed-files.outputs.added_modified }})
-          # BQ_FILES=$(echo ${content_arr[@]} | sed 's/ /\n/g' | grep -E '.*([sql|SQL]\/procedures).*\.sql') || echo ""
-          
-          # ALL FILES IN REPO
-          BQ_FILES=$(find . -regextype posix-egrep -iregex ".*(sql\/procedures).*\.sql" -print)
+          if [[ ${{ inputs.only_modified_files }} == true ]]; then            
+            content_arr=(${{ steps.changed-files.outputs.added_modified }})
+            BQ_FILES=$(echo ${content_arr[@]} | sed 's/ /\n/g' | grep -E '.*([sql|SQL]\/procedures).*\.sql') || echo ""
+          else
+            BQ_FILES=$(find . -regextype posix-egrep -iregex ".*(sql\/procedures).*\.sql" -print)
+          fi
 
           printf "BQ FILES: [%s]\n" "$BQ_FILES"
           for i in $BQ_FILES; do
