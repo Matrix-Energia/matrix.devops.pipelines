@@ -86,10 +86,10 @@ jobs:
               --location=${{ env.REPOSITORY_REGION }} \
               --format=text | grep -q ${{ env.REPOSITORY_NAME }}; then
             echo "Repository found"
-            aux = true
+            aux=true
           else
             echo "Repository not found"
-            aux = false
+            aux=false
           fi
           echo "REPO_EXISTS=$aux" >> "$GITHUB_OUTPUT"
 
