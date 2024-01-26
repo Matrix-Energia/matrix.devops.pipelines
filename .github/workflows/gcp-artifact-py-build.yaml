@@ -1,9 +1,7 @@
 name: Deploy Python Lib to Artifact Registry Pipeline - latest
-
 env:
   CLONE_TOKEN: GIT_TOKEN_CUSTOM
   PUBLISH_TOKEN: PACKAGES_TOKEN
-
 on:
   workflow_call:
     inputs:
@@ -11,7 +9,6 @@ on:
         type: string
         required: false
         default: 3.8
-
 jobs:
   gcp-artifact-py-build:
     runs-on: ubuntu-latest
@@ -76,10 +73,10 @@ jobs:
         with:
           version: '>= 390.0.0'
 
-      - name: 'Use gcloud CLI'
+      - name: 'Use gcloud cli'
         run: 'gcloud info'
  
-      - name: Set Project ID
+      - name: Set project id
         run: gcloud config set project ${{ env.PROJECT_ID }}
 
       - name: Check if Repository exists
