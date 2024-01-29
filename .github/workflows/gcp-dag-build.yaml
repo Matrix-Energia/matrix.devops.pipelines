@@ -40,10 +40,16 @@ jobs:
 
       - name: Set vars
         run: |
+          APP_NAME="${GITHUB_REPOSITORY/'Matrix-Energia/'/}"
+          APP_NAME="${APP_NAME/matrix./}"
+          APP_NAME="${APP_NAME/lakehouse./}"
+          APP_NAME="${APP_NAME//./-}"
           ENVIRONMENT_LOWER="${ENVIRONMENT,,}"
+
           echo WORKLOAD_IDENTITY_PROVIDER="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"       >> $GITHUB_ENV
           echo SERVICE_ACCOUNT="github-actions@${PROJECT_ID}.iam.gserviceaccount.com"             >> $GITHUB_ENV
           echo COMPOSER_BUCKET="matrix-${{ env.PROJECT_NUMBER }}-composer-${ENVIRONMENT_LOWER}"   >> $GITHUB_ENV
+          echo APP_NAME="$APP_NAME"                                                               >> $GITHUB_ENV
 
       - name: Authenticate to Google Cloud
         uses: 'google-github-actions/auth@v2'
@@ -65,4 +71,4 @@ jobs:
       - name: Copy DAGs files to bucket
         run: |
           printf "composer bucket: [%s]\n" "${{ env.COMPOSER_BUCKET }}"
-          gsutil cp -r dags gs://${{ env.COMPOSER_BUCKET }}/
+          gsutil cp -r dags/* gs://${{ env.COMPOSER_BUCKET }}/dags/${{ env.APP_NAME }}/
