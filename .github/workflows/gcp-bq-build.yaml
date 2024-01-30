@@ -103,7 +103,7 @@ jobs:
       - name: Set action vars
         run: |
           echo "ONLY_MODIFIED_FILES=${{ inputs.only_modified_files }}"                     >> $GITHUB_ENV
-          echo "CHANGED_FILES_PATHS=${{ steps.changed-files.outputs.added_modified }}"     >> $GITHUB_ENV
+          echo "CHANGED_FILES_PATH=${{ steps.changed-files.outputs.added_modified }}"      >> $GITHUB_ENV
       
       - name: Processing BQ Tables Files
         uses: ./.github/actions/bq-execute-query
