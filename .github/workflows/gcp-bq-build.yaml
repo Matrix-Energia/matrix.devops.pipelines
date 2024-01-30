@@ -100,52 +100,17 @@ jobs:
           format: space-delimited
           token: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Set action vars
+        run: |
+          echo "ONLY_MODIFIED_FILES=${{ inputs.only_modified_files }}"                     >> $GITHUB_ENV
+          echo "CHANGED_FILES_PATH=${{ steps.changed-files.outputs.added_modified }}"      >> $GITHUB_ENV
+      
       - name: Processing BQ Tables Files
-        run: |
-          # ONLY CREATED OR MODIFIED
-          if [[ ${{ inputs.only_modified_files }} == true ]]; then            
-            content_arr=(${{ steps.changed-files.outputs.added_modified }})
-            BQ_FILES=$(echo ${content_arr[@]} | sed 's/ /\n/g' | grep -E '.*([sql|SQL]\/tables).*\.sql') || echo ""
-          else
-            BQ_FILES=$(find . -regextype posix-egrep -iregex ".*(sql\/tables).*\.sql" -print)
-          fi
-
-          printf "BQ FILES: [%s]\n" "$BQ_FILES"
-          for i in $BQ_FILES; do
-
-            printf "file path: [%s]\n" "$i"
-
-            templated_sql=$(sql-templated \
-              --project-id ${{ env.PROJECT_ID }} \
-              --project-number ${{ env.PROJECT_NUMBER }} \
-              --environment ${{ env.ENVIRONMENT }} \
-              --file-path ${i})
-            
-            bq query --use_legacy_sql=false "${templated_sql}"
-            
-          done
-
+        uses: Matrix-Energia/matrix.devops.pipelines/.github/actions/bq-execute-query@latest
+        with:
+          bq_file_type: 'tables'
+          
       - name: Processing BQ Procedures Files
-        run: |
-          # ONLY CREATED OR MODIFIED
-          if [[ ${{ inputs.only_modified_files }} == true ]]; then            
-            content_arr=(${{ steps.changed-files.outputs.added_modified }})
-            BQ_FILES=$(echo ${content_arr[@]} | sed 's/ /\n/g' | grep -E '.*([sql|SQL]\/procedures).*\.sql') || echo ""
-          else
-            BQ_FILES=$(find . -regextype posix-egrep -iregex ".*(sql\/procedures).*\.sql" -print)
-          fi
-
-          printf "BQ FILES: [%s]\n" "$BQ_FILES"
-          for i in $BQ_FILES; do
-
-            printf "file path: [%s]\n" "$i"
-
-            templated_sql=$(sql-templated \
-              --project-id ${{ env.PROJECT_ID }} \
-              --project-number ${{ env.PROJECT_NUMBER }} \
-              --environment ${{ env.ENVIRONMENT }} \
-              --file-path ${i})
-            
-            bq query --use_legacy_sql=false "${templated_sql}"
-
-          done
+        uses: Matrix-Energia/matrix.devops.pipelines/.github/actions/bq-execute-query@latest
+        with:
+          bq_file_type: 'procedures'
