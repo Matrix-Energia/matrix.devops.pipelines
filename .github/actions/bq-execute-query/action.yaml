@@ -7,6 +7,15 @@ inputs:
 runs:
   using: "composite"
   steps:
+      - name: Printing env variables
+        shell: bash
+        run: |
+          printf "PROJECT_ID: [ %s ]\n" "${{ env.PROJECT_ID }}"
+          printf "PROJECT_NUMBER: [ %s ]\n" "${{ env.PROJECT_NUMBER }}"
+          printf "ENVIRONMENT: [ %s ]\n" "${{ env.ENVIRONMENT }}"
+          printf "ONLY_MODIFIED_FILES: [ %s ]\n" "${{ env.ONLY_MODIFIED_FILES }}"
+          printf "CHANGED_FILES_PATH: [ %s ]\n" "${{ env.CHANGED_FILES_PATH }}"
+
       - name: Processing BQ Files
         shell: bash
         run: |
@@ -17,7 +26,7 @@ runs:
             BQ_FILES=$(find . -regextype posix-egrep -iregex ".*(sql\/${{ inputs.bq_file_type }}).*\.sql" -print)
           fi
 
-          printf "BQ FILES: [%s]\n" "$BQ_FILES"
+          printf "bq files: [ %s ]\n" "$BQ_FILES"
           for i in $BQ_FILES; do
 
             printf "file path: [%s]\n" "$i"
