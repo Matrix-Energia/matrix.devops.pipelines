@@ -7,7 +7,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-      - name: Processing ${{ inputs.bq_file_type }} BQ Files
+      - name: Processing BQ Files
         shell: bash
         run: |
           if [[ ${{ env.ONLY_MODIFIED_FILES }} == true ]]; then            
