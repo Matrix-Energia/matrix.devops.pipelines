@@ -7,15 +7,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-      - name: Printing env variables
-        shell: bash
-        run: |
-          printf "PROJECT_ID: [ %s ]\n" "${{ env.PROJECT_ID }}"
-          printf "PROJECT_NUMBER: [ %s ]\n" "${{ env.PROJECT_NUMBER }}"
-          printf "ENVIRONMENT: [ %s ]\n" "${{ env.ENVIRONMENT }}"
-          printf "ONLY_MODIFIED_FILES: [ %s ]\n" "${{ env.ONLY_MODIFIED_FILES }}"
-          printf "CHANGED_FILES_PATH: [ %s ]\n" "${{ env.CHANGED_FILES_PATH }}"
-
       - name: Processing BQ Files
         shell: bash
         run: |
