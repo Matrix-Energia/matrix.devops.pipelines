@@ -36,22 +36,22 @@ jobs:
         if: ( github.ref_name != 'main' && github.ref_name != 'hml') || contains(github.ref_name, 'dev')
         run: |
           echo ENVIRONMENT="dev"                                                      >> $GITHUB_ENV
-          echo PROJECT_NUMBER="202162360786"                                          >> $GITHUB_ENV
-          echo PROJECT_ID="matrixx-plataforma-dados-dev"                              >> $GITHUB_ENV
+          echo PROJECT_NUMBER="350262471742"                                          >> $GITHUB_ENV
+          echo PROJECT_ID="matrix-plataforma-dados-dev"                               >> $GITHUB_ENV
 
       - name: Hml
-        if: ( github.ref_name != 'main' && github.ref_name != 'dev') || contains(github.ref_name, 'hml')
+        if: github.ref_name == 'hml'
         run: |
           echo ENVIRONMENT="hml"                                                      >> $GITHUB_ENV
           echo PROJECT_NUMBER="961402051661"                                          >> $GITHUB_ENV
           echo PROJECT_ID="matrix-plataforma-dados-hml"                               >> $GITHUB_ENV
 
       - name: Prd
-        if: ( github.ref_name != 'hml' && github.ref_name != 'dev') || contains(github.ref_name, 'main')
+        if: github.ref_name == 'main'
         run: |
           echo ENVIRONMENT="prd"                                                      >> $GITHUB_ENV
-          echo PROJECT_NUMBER="683636317110"                                          >> $GITHUB_ENV
-          echo PROJECT_ID="matrix-platadorma-dados-prd"                               >> $GITHUB_ENV
+          echo PROJECT_NUMBER="996952320853"                                          >> $GITHUB_ENV
+          echo PROJECT_ID="matrix-plataforma-dados-prd"                               >> $GITHUB_ENV
 
       - name: Set vars
         run: |
