@@ -118,14 +118,27 @@ jobs:
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ env.SERVICE_ACCOUNT }}
 
-      - name: configure Docker
+      - name: get-keyvault-secrets
+        id: import-keyvault
+        env:
+          AZ_USER: ${{ secrets.AKS_KV_USR }}
+          AZ_PWD: ${{ secrets.AKS_KV_PWD }}
+          AZ_TENANT: ${{ secrets.AKS_KV_TENANT}}
         run: |
-          gcloud auth configure-docker us-east1-docker.pkg.dev
-      
+          KEYVAULT="aks-matrix-${ENVIRONMENT_LOWER}"
+          az login --service-principal -u $AZ_USER -p $AZ_PWD --tenant $AZ_TENANT
+          az keyvault secret show --vault-name "${KEYVAULT}" --name "$APP_NAME" --query value -o tsv >> kv-secrets.txt
+          KV_SECRET="$( cat kv-secrets.txt )"
+          echo "kv-secrets=${KV_SECRET}" >> $GITHUB_OUTPUT
+  
+      - name: create secret on secret manager
+        run: |
+          gcloud secrets create "$APP_NAME"  --data-file=kv-secrets.txt       
+        
       - name: get secrets
         run: |
-          gcloud secrets versions access latest --secret="$APP_NAME" > app-config.txt
-          gcloud secrets versions access latest --secret="nexus-settings" > nexus-settings.txt
+            gcloud secrets versions access latest --secret="$APP_NAME" > app-config.txt || true
+            gcloud secrets versions access latest --secret="nexus-settings" > nexus-settings.txt
 
       - name: create settings.xml
         run: |
