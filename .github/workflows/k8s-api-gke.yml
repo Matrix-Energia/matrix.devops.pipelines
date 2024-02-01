@@ -136,7 +136,7 @@ jobs:
         continue-on-error: true
 
       - name: update secret on secret manager
-        run: gcloud secrets update "$APP_NAME"   --update-labels="test"
+        run: gcloud secrets update "$APP_NAME"   --update-labels=chave=test"
 
       - name: get secrets
         run: |
