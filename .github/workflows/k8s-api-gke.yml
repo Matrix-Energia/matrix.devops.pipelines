@@ -133,8 +133,11 @@ jobs:
   
       - name: create secret on secret manager
         run: gcloud secrets create "$APP_NAME"  --data-file=kv-secrets.txt
-        continue-on-error: true  
-        
+        continue-on-error: true
+
+      - name: update secret on secret manager
+        run: gcloud secrets update "$APP_NAME"  --data-file=kv-secrets.txt 
+
       - name: get secrets
         run: |
             gcloud secrets versions access latest --secret="$APP_NAME" > app-config.txt 
