@@ -94,7 +94,7 @@ jobs:
           echo "REPO_EXISTS=$aux" >> "$GITHUB_OUTPUT"
 
       - name: Create Repository
-        if: "${{ ! steps.check-repo.outputs.REPO_EXISTS }}"
+        if: "${{ steps.check-repo.outputs.REPO_EXISTS == 'false' }}"
         run: |
           echo ${{ steps.check-repo.outputs.REPO_EXISTS }}
           gcloud artifacts repositories create ${{ env.REPOSITORY_NAME }} \
