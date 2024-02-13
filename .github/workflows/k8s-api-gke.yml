@@ -52,14 +52,14 @@ jobs:
           gcloud components install gke-gcloud-auth-plugin
 
       - name: dev
-        if: ( github.ref_name != 'main' && github.ref_name != 'k8s-prd' && github.ref_name != 'hml' && github.ref_name != 'k8s-hml' && github.ref_name != 'feature/gke-hml')
+        if: ( github.ref_name != 'main' && github.ref_name != 'k8s-prd' && github.ref_name != 'hml' && github.ref_name != 'k8s-hml') || contains(github.ref_name, 'dev')
         run: |
           echo "ENVIRONMENT=DEV" >> $GITHUB_ENV
           echo "APP_REVISION=${GITHUB_REF_NAME//\//-}" >> $GITHUB_ENV
           echo "PROJECT_NUMBER=62196059690"            >> $GITHUB_ENV
           echo GKE_REGION="us-east1-b"                 >> $GITHUB_ENV
       - name: hml
-        if:  github.ref_name == 'hml' 
+        if:  github.ref_name == 'hml' || contains(github.ref_name, 'hml')
         run: |
           echo "ENVIRONMENT=HML" >> $GITHUB_ENV
           echo "APP_REVISION=hml" >> $GITHUB_ENV
@@ -67,13 +67,6 @@ jobs:
           echo GKE_REGION="us-east1-b"                 >> $GITHUB_ENV
       - name: hml-k8s
         if: github.ref_name == 'k8s-hml'
-        run: |
-          echo "ENVIRONMENT=HML" >> $GITHUB_ENV
-          echo "APP_REVISION=hml" >> $GITHUB_ENV
-          echo "PROJECT_NUMBER=892092479263" >> $GITHUB_ENV
-          echo GKE_REGION="us-east1-b"       >> $GITHUB_ENV
-      - name: hml-gke-k8s
-        if: github.ref_name == 'feature/gke-hml'
         run: |
           echo "ENVIRONMENT=HML" >> $GITHUB_ENV
           echo "APP_REVISION=hml" >> $GITHUB_ENV
@@ -88,7 +81,7 @@ jobs:
           echo GKE_REGION="us-east1"       >> $GITHUB_ENV
           
       - name: prd-k8s
-        if: github.ref_name == 'k8s-prd'
+        if: github.ref_name == 'k8s-prd' || contains(github.ref_name, 'prd')
         run: |
           echo "ENVIRONMENT=PRD" >> $GITHUB_ENV
           echo "APP_REVISION=prd" >> $GITHUB_ENV
@@ -197,6 +190,10 @@ jobs:
       - name: get kubeconfig
         run: |
           gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --region ${{ env.GKE_REGION }} --project ${{ env.PROJECT_ID }}
+          
+      - name: service account workload identity
+        run: |
+          gcloud iam service-accounts list | grep -q $APP_NAME || gcloud iam service-accounts create $APP_NAME
 
       - name: install app
         run: |
@@ -213,3 +210,8 @@ jobs:
             --set repository='${{ github.repository }}' \
             --set config='${{ steps.parseVars.outputs.result }}'
           rm -r .ci/values.yaml
+
+      - name: Workload Identity binding
+        run: |
+          gcloud iam service-accounts add-iam-policy-binding $APP_NAME@${{ env.PROJECT_ID }}.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:${{ env.PROJECT_ID }}.svc.id.goog[${{ inputs.namespace }}/$APP_NAME]"
+          

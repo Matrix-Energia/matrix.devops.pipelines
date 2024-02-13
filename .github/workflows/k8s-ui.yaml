@@ -210,6 +210,10 @@ jobs:
         run: |
           gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --region ${{ env.GKE_REGION }} --project ${{ env.PROJECT_ID }}
 
+      - name: service account workload identity
+        run: |
+          gcloud iam service-accounts list | grep -q $APP_NAME || gcloud iam service-accounts create $APP_NAME
+          
       - name: install app
         run: |
           helm upgrade ${{env.APP_NAME}} \
@@ -222,3 +226,8 @@ jobs:
             --set environment='${{env.ENVIRONMENT_LOWER}}' \
             --set image='us-east1-docker.pkg.dev/${{env.PROJECT_ID}}/gke-images/${{env.APP_NAME}}:${{ env.APP_TAG }}' \
             --set repository='${{ github.repository }}' 
+            
+      - name: Workload Identity binding
+        run: |
+          gcloud iam service-accounts add-iam-policy-binding $APP_NAME@${{ env.PROJECT_ID }}.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:${{ env.PROJECT_ID }}.svc.id.goog[${{ inputs.namespace }}/$APP_NAME]"
+          
