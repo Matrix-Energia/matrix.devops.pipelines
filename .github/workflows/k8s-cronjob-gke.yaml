@@ -4,7 +4,7 @@ env:
   PUBLISH_TOKEN: PACKAGES_TOKEN
   HELM_VERSION: v3.9.2
   CHART_REPOSITORY: 'Matrix-Energia/matrix.devops.template.charts.git'
-  CHART_REVISION: latest
+  CHART_REVISION: v12-fix-cronjob
   CHART_PATH: charts
   CHART_TYPE: gke-cronjob
   YQ_VERSION: v4.2.0
