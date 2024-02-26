@@ -1,0 +1,182 @@
+name: k8s SWA Matrix GD
+# SWA Uses a .env instead of .yaml encoded file
+env:
+  HELM_VERSION: v3.9.2
+  CHART_REVISION: latest
+  CHART_PATH: _CHARTS_
+  CHART_TYPE: webpage-gd
+  PIPELINE_REVISION: latest
+  PIPELINE_PATH: _PIPELINE_
+  DOCKERFILE_PATH: Dockerfiles/swa-nextjs
+  OUT_DIR: TMP_OUT
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        required: true
+        default: 16.14.2
+      build-command:
+        type: string
+        required: false
+        default: npm run ci && npm run build
+      namespace:
+        type: string
+        required: false
+        default: matrixgd-webpages
+      external:
+        type: boolean
+        required: false
+        default: true
+      output-dir:
+        type: string
+        required: false
+        default: dist
+      tokenName:
+        type: string
+        required: false
+        default: GIT_TOKEN
+jobs:
+  swa:
+    runs-on: ubuntu-latest
+    steps:
+# Configuration Setup
+      - name: clone repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.GIT_TOKEN_CUSTOM }}
+      - name: dev
+        if: ( github.ref_name != 'main' && github.ref_name != 'k8s-prd' && github.ref_name != 'hml' && github.ref_name != 'k8s-hml')
+        run: |
+          echo "ENVIRONMENT=DEV" >> $GITHUB_ENV
+          echo "APP_REVISION=${GITHUB_REF_NAME//\//-}" >> $GITHUB_ENV
+      - name: hml
+        if: github.ref_name == 'hml'
+        run: |
+          echo "ENVIRONMENT=HML" >> $GITHUB_ENV
+          echo "APP_REVISION=hml" >> $GITHUB_ENV
+      - name: hml-k8s
+        if: github.ref_name == 'k8s-hml'
+        run: |
+          echo "ENVIRONMENT=HML" >> $GITHUB_ENV
+          echo "APP_REVISION=hml" >> $GITHUB_ENV
+      - name: prd
+        if: github.ref_name == 'main'
+        run: |
+          echo "ENVIRONMENT=PRD" >> $GITHUB_ENV
+          echo "APP_REVISION=prd" >> $GITHUB_ENV
+      - name: prd-k8s
+        if: github.ref_name == 'k8s-prd'
+        run: |
+          echo "ENVIRONMENT=PRD" >> $GITHUB_ENV
+          echo "APP_REVISION=prd" >> $GITHUB_ENV
+      - name: configure variables
+        run: |
+          APP_NAME=${GITHUB_REPOSITORY/'Matrix-Energia/'/}
+          APP_NAME=${APP_NAME/matrix.gd./} 
+          APP_NAME=${APP_NAME//./-}
+          ENVIRONMENT_LOWER="${ENVIRONMENT,,}"
+          REGISTRY_NAME=${ENVIRONMENT_LOWER}akscr.azurecr.io
+          echo "REGISTRY_NAME=${REGISTRY_NAME}"                     >> $GITHUB_ENV
+          echo "REGISTRY_USR=MATRIX_${ENVIRONMENT}_ACR_USERNAME"    >> $GITHUB_ENV
+          echo "REGISTRY_PWD=MATRIX_${ENVIRONMENT}_ACR_PASSWORD"    >> $GITHUB_ENV
+          echo "ENVIRONMENT_LOWER=${ENVIRONMENT_LOWER}"             >> $GITHUB_ENV
+          echo "APP_NAME=${APP_NAME}"                               >> $GITHUB_ENV
+          echo "APP_IMAGE=${REGISTRY_NAME}/${GITHUB_REPOSITORY,,}"  >> $GITHUB_ENV
+          echo APP_TAG="${GITHUB_SHA:0:8}-${GITHUB_RUN_NUMBER}"     >> $GITHUB_ENV
+          echo "KUBE_CONFIG=MATRIX_${ENVIRONMENT}_AKS_KUBE_CONFIG"  >> $GITHUB_ENV
+# Docker setup
+      - name: clone dockerfile
+        uses: actions/checkout@v3
+        with:
+          repository: 'Matrix-Energia/matrix.devops.pipelines.git'
+          ref: ${{ env.PIPELINE_REVISION }}
+          path: ${{ env.PIPELINE_PATH }}
+          token: ${{ secrets.GIT_TOKEN_CUSTOM }}      
+      - name: copy dockerfile
+        run: mv -f ${{ env.PIPELINE_PATH }}/${{ env.DOCKERFILE_PATH }}/* ./
+      - name: Check files
+        run: ls -la && ls -la ${{ env.PIPELINE_PATH }}
+# Docker registry setup
+      - name: docker login 
+        uses: Azure/docker-login@v1
+        with:
+          login-server: ${{ env.REGISTRY_NAME }}
+          username: ${{ secrets[env.REGISTRY_USR] }}
+          password: ${{ secrets[env.REGISTRY_PWD] }}
+# Helm Setup
+      - name: install helm tool
+        uses: azure/setup-helm@v3
+        with:
+          version: ${{ env.HELM_VERSION }}
+      - name: clone helms
+        uses: actions/checkout@v3
+        with:
+          repository: 'Matrix-Energia/matrix.devops.template.charts.git'
+          ref: ${{ env.CHART_REVISION }}
+          path: ${{ env.CHART_PATH }}
+          token: ${{ secrets.GIT_TOKEN_CUSTOM }}
+# k8s Cluster Setup
+      - name: connect to cluster
+        uses: Azure/k8s-set-context@v2
+        with:
+          kubeconfig: ${{ secrets[env.KUBE_CONFIG] }}
+# Build Application and Container        
+      - name: install nodejs ${{ inputs.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node-version }}
+# Importing and setting up environment variables from keyvault
+      - name: import keyvault
+        env:
+          AZ_USER: ${{ secrets.AKS_KV_USR }}
+          AZ_PWD: ${{ secrets.AKS_KV_PWD }}
+          AZ_TENANT: ${{ secrets.AKS_KV_TENANT}}
+        run: |
+          KEYVAULT="aks-gd-${ENVIRONMENT_LOWER}"
+          rm -rf app-config.txt
+          az login --service-principal -u $AZ_USER -p $AZ_PWD --tenant $AZ_TENANT
+          az keyvault secret show --vault-name "${KEYVAULT}" --name "$APP_NAME" --query value -o tsv >> app-config.txt
+          cat app-config.txt
+      - name: create .env
+        run: |
+          rm -rf .env
+          cat app-config.txt | base64 -d >> .env
+          cat .env
+      - name: create .npmrc
+        run: |
+          rm -rf .npmrc
+          echo "@matrix-energia:registry=https://npm.pkg.github.com" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.PACKAGES_TOKEN }}" >> .npmrc
+          cat .npmrc
+# Build steps
+      - name: build application
+        run: |
+          ${{ inputs.build-command }}
+          rm -rf ${{ env.OUT_DIR }}} && mkdir ${{ env.OUT_DIR }}
+          cp -rf ${{ inputs.output-dir }}/* ${{ env.OUT_DIR }}/
+          echo "Output Files: "
+          ls -lah ${{ env.OUT_DIR }}
+      - name: docker build
+        run: |
+          docker build \
+            --build-arg ${{ inputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
+            -t "${{ env.APP_IMAGE }}:${{ env.APP_TAG }}" \
+            -t "${{ env.APP_IMAGE }}:latest" \
+            .
+# Docker Push
+      - name: docker push
+        run: docker push --all-tags ${{ env.APP_IMAGE }}
+# Install to Cluster
+      - name: install helm chart
+        run: |
+          helm upgrade ${{ env.APP_NAME }}-${{ env.APP_REVISION }} \
+            ${{ env.CHART_PATH }}/${{ env.CHART_TYPE }} \
+            --install \
+            --atomic \
+            --namespace '${{ inputs.namespace }}' \
+            --create-namespace \
+            --set environment='${{ env.ENVIRONMENT_LOWER }}' \
+            --set image='${{ env.APP_IMAGE }}:${{ env.APP_TAG }}' \
+            --set external='${{ inputs.external }}'
