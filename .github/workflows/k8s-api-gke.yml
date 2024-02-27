@@ -166,8 +166,11 @@ jobs:
               if [ -f "newrelic.ini" ]; then
                 sed -i 's/app_name =.*/app_name = ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.ini
               else
-                sed -i 's/app_name:.*/app_name: ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.yml
-                exit 1
+                if [ -f "newrelic.yml" ]; then
+                  sed -i 's/app_name:.*/app_name: ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.yml
+                else
+                  exit 1
+                fi
               fi   
       - name: docker build
         run: |
