@@ -144,7 +144,7 @@ jobs:
           sed -i "s/ENV_LOWER/${ENVIRONMENT_LOWER}/" Dockerfile
           sed -i "s/APP_NAME/${APP_NAME}/" Dockerfile
           docker build \
-            --build-arg ${{ steps.configure-app.outputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
+            --build-arg GIT_TOKEN=${{ secrets.PACKAGES_TOKEN }} \
             -t "${{ env.APP_IMAGE }}:${{ env.APP_TAG }}" \
             -t "${{ env.APP_IMAGE }}:latest" \
             .
