@@ -147,6 +147,7 @@ jobs:
             --build-arg ${{ steps.configure-app.outputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
             -t "${{ env.APP_IMAGE }}:${{ env.APP_TAG }}" \
             -t "${{ env.APP_IMAGE }}:latest" \
+            .
             
       - name: docker push
         run: docker push --all-tags ${{ env.APP_IMAGE }}
