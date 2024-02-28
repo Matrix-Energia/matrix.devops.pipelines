@@ -38,9 +38,6 @@ jobs:
       tag: ${{ steps.configure-app.outputs.tag }}
       kube_config: ${{ steps.configure-app.outputs.kube_config }}
       config_b64: ${{ steps.parseVars.outputs.result }}
-      namespace: matrix-apps
-      values: .ci/values.yaml
-      tokenName: GIT_TOKEN
     steps:
       - name: check-if-right-label
         if: ${{ github.event.label.name != 'deploy-dev' && github.event.label.name != 'deploy-hml' }}
@@ -143,10 +140,9 @@ jobs:
           sed -i "s/ENV_LOWER/${ENVIRONMENT_LOWER}/" Dockerfile
           sed -i "s/APP_NAME/${APP_NAME}/" Dockerfile
           docker build \
-            --build-arg ${{ steps.configure-app.outputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
+            --build-arg  ${{ inputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
             -t "${{ env.APP_IMAGE }}:${{ env.APP_TAG }}" \
             -t "${{ env.APP_IMAGE }}:latest" \
-            .
       - name: docker push
         run: docker push --all-tags ${{ env.APP_IMAGE }}
       - name: connect to cluster
