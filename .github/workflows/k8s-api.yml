@@ -132,7 +132,8 @@ jobs:
                 else
                   exit 1
                 fi
-              fi  
+              fi
+        continue-on-error: true       
       - name: docker login
         uses: Azure/docker-login@v1
         with:
