@@ -126,8 +126,10 @@ jobs:
         run: |
               if [ -f "newrelic.ini" ]; then
                 sed -i 's/app_name =.*/app_name = ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.ini
+                cat newrelic.ini
               if [ -f "newrelic.yml" ]; then
                 sed -i 's/app_name:.*/app_name: ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.yml
+                cat newrelic.yml
               else
                 exit 1
               fi
