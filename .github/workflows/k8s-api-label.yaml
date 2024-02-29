@@ -38,9 +38,9 @@ jobs:
       tag: ${{ steps.configure-app.outputs.tag }}
       kube_config: ${{ steps.configure-app.outputs.kube_config }}
       config_b64: ${{ steps.parseVars.outputs.result }}
-      namespace: matrix-apps
-      values: .ci/values.yaml
-      tokenName: GIT_TOKEN
+      namespace: "matrix-apps"
+      values: ".ci/values.yaml"
+      tokenName: "GIT_TOKEN"
 
     steps:
       - name: check-if-right-label
@@ -174,8 +174,8 @@ jobs:
             --install \
             --wait \
             --timeout 6m0s \
-            --namespace '${{ steps.configure-app.outputs.namespace }}' \
-            --values '${{ steps.configure-app.outputs.values }}' \
+            --namespace 'matrix-apps' \
+            --values '.ci/values.yaml' \
             --set environment='${{ steps.configure-app.outputs.environment }}' \
             --set image='${{ steps.configure-app.outputs.image }}:${{ steps.configure-app.outputs.tag }}' \
             --set repository='${{ github.repository }}' \
