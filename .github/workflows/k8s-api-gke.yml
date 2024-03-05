@@ -160,6 +160,7 @@ jobs:
           RESULT="$( cat .result | base64 -w0 )"
           echo "result=${RESULT}" >> $GITHUB_OUTPUT
           rm -r app-config.txt
+          
       - name: pre-config newrelic
         
         run: |
@@ -173,6 +174,7 @@ jobs:
             else
               echo "arquivo não encrontado"
             fi
+
       - name: docker build
         run: |
           sed -i "s/ENV_LOWER/${ENVIRONMENT_LOWER}/" Dockerfile
