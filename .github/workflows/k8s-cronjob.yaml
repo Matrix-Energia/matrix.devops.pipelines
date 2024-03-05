@@ -126,6 +126,20 @@ jobs:
           cat config.yaml >> .ci/values.yaml
           cat .ci/values.yaml
           rm -r app-config.txt
+
+      - name: pre-config newrelic        
+        run: |
+          if [ -f "newrelic.ini" ]; then
+            sed -i 's/app_name =.*/app_name = ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.ini
+            cat newrelic.ini
+          fi 
+          if [ -f "newrelic.yml" ]; then
+            sed -i 's/app_name:.*/app_name: ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.yml
+            cat newrelic.yml
+          else
+            exit 1
+          fi         
+  
       - name: docker login
         uses: Azure/docker-login@v1
         with:

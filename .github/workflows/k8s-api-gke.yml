@@ -161,8 +161,18 @@ jobs:
           echo "result=${RESULT}" >> $GITHUB_OUTPUT
           rm -r app-config.txt
       - name: pre-config newrelic
+        
         run: |
-              sed -i 's/app_name:.*/app_name: ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.yml    
+            if [ -f "newrelic.ini" ]; then
+              sed -i 's/app_name =.*/app_name = ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.ini
+              cat newrelic.ini
+            fi 
+            if [ -f "newrelic.yml" ]; then
+              sed -i 's/app_name:.*/app_name: ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.yml
+              cat newrelic.yml
+            else
+              exit 1
+            fi
       - name: docker build
         run: |
           sed -i "s/ENV_LOWER/${ENVIRONMENT_LOWER}/" Dockerfile
