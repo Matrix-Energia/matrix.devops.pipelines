@@ -157,7 +157,19 @@ jobs:
           cat config.yaml >> .ci/values.yaml
           cat .ci/values.yaml
           rm -r app-config.txt
-          
+      
+      - name: pre-config newrelic        
+        run: |
+              if [ -f "newrelic.ini" ]; then
+                sed -i 's/app_name =.*/app_name = ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.ini
+              else
+                if [ -f "newrelic.yml" ]; then
+                  sed -i 's/app_name:.*/app_name: ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.yml
+                else
+                  echo "arquivo não encrontado"
+                fi
+              fi            
+
       - name: configure Docker
         run: |
           gcloud auth configure-docker us-east1-docker.pkg.dev
