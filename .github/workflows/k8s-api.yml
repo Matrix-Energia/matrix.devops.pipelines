@@ -122,6 +122,7 @@ jobs:
           RESULT="$( cat .result | base64 -w0 )"
           echo "result=${RESULT}" >> $GITHUB_OUTPUT
           rm -r app-config.txt
+
       - name: pre-config newrelic
         run: |
             if [ -f "newrelic.ini" ]; then
@@ -135,6 +136,7 @@ jobs:
               echo "arquivo não encrontado"
             fi
         continue-on-error: true       
+        
       - name: docker login
         uses: Azure/docker-login@v1
         with:
