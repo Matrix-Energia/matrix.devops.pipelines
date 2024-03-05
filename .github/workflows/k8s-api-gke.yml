@@ -138,6 +138,7 @@ jobs:
            sed -n '/SERVER_CA/,/SERVER_CA/{/SERVER_CA/b;/SERVER_CA/b;p}' certs.txt > server-ca.pem
            sed -n '/CLIENT_KEY/,/CLIENT_KEY/{/CLIENT_KEY/b;/CLIENT_KEY/b;p}' certs.txt > client-key.pem
            sed -n '/CLIENT_CERT/,/CLIENT_CERT/{/CLIENT_CERT/b;/CLIENT_CERT/b;p}' certs.txt > client-cert.pem
+           sed -n '/KEYSTORE_PASSWORD/,/KEYSTORE_PASSWORD/{/KEYSTORE_PASSWORD/b;/KEYSTORE_PASSWORD/b;p}' certs.txt > keystore-passwork.txt
             
            
       - name: create settings.xml
