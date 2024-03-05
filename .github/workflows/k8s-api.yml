@@ -132,7 +132,7 @@ jobs:
               sed -i 's/app_name:.*/app_name: ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.yml
               cat newrelic.yml
             else
-              exit 1
+              echo "arquivo não encrontado"
             fi
         continue-on-error: true       
       - name: docker login
