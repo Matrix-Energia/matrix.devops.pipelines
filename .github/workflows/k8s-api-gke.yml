@@ -24,6 +24,10 @@ on:
         type: string
         required: false
         default: GIT_TOKEN
+      sslCertificate:
+        type: boolean
+        required: false
+        default: false        
 jobs:
   k8s-api:
     runs-on: ubuntu-latest
@@ -127,6 +131,15 @@ jobs:
           gcloud secrets versions access latest --secret="$APP_NAME" > app-config.txt
           gcloud secrets versions access latest --secret="nexus-settings" > nexus-settings.txt
 
+      - name: get ssl certificate
+        if: inputs.sslCertificate
+        run: |
+           gcloud secrets versions access latest --secret="cert-$APP_NAME" | base64 -d > certs.txt
+           sed -n '/SERVER_CA/,/SERVER_CA/{/SERVER_CA/b;/SERVER_CA/b;p}' certs.txt > server-ca.pem
+           sed -n '/CLIENT_KEY/,/CLIENT_KEY/{/CLIENT_KEY/b;/CLIENT_KEY/b;p}' certs.txt > client-key.pem
+           sed -n '/CLIENT_CERT/,/CLIENT_CERT/{/CLIENT_CERT/b;/CLIENT_CERT/b;p}' certs.txt > client-cert.pem
+            
+           
       - name: create settings.xml
         run: |
           cat nexus-settings.txt | base64 -d >> settings.xml
