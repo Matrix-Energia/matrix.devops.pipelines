@@ -1,0 +1,216 @@
+name: k8s Api Pipeline - Latest
+env:
+  CLONE_TOKEN: GIT_TOKEN_CUSTOM
+  PUBLISH_TOKEN: PACKAGES_TOKEN
+  HELM_VERSION: v3.9.2
+  CHART_REPOSITORY: 'Matrix-Energia/matrix.devops.template.charts.git'
+  CHART_REVISION: latest
+  CHART_PATH: charts
+  CHART_TYPE: gke-api
+  YQ_VERSION: v4.2.0
+  YQ_BINARY: yq_linux_amd64
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        type: string
+        required: false
+        default: matrix-apps
+      values:
+        type: string
+        required: false
+        default: .ci/values.yaml
+      tokenName:
+        type: string
+        required: false
+        default: GIT_TOKEN
+      sslCertificate:
+        type: boolean
+        required: false
+        default: false        
+      appName:
+        type: string
+        required: true
+        default: poc             
+jobs:
+  k8s-api:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.configure-app.outputs.environment }}
+      name: ${{ steps.configure-app.outputs.name }}
+      revision: ${{ steps.configure-app.outputs.name }}
+      image: ${{ steps.configure-app.outputs.image }}
+      tag: ${{ steps.configure-app.outputs.tag }}
+      config_b64: ${{ steps.parseVars.outputs.result }}
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets[env.CLONE_TOKEN] }}
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: Install gcloud plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin
+
+      - name: dev
+        if: ( github.ref_name != 'main' && github.ref_name != 'k8s-prd' && github.ref_name != 'hml' && github.ref_name != 'k8s-hml') || contains(github.ref_name, 'dev')
+        run: |
+          echo "ENVIRONMENT=DEV" >> $GITHUB_ENV
+          echo "APP_REVISION=${GITHUB_REF_NAME//\//-}" >> $GITHUB_ENV
+          echo "PROJECT_NUMBER=62196059690"            >> $GITHUB_ENV
+          echo GKE_REGION="us-east1-b"                 >> $GITHUB_ENV
+          
+      - name: set-vars
+        run: |
+          ENVIRONMENT_LOWER="${ENVIRONMENT,,}"
+          PROJECT_ID="matrix-gke-${ENVIRONMENT_LOWER}"
+          
+          echo GKE_CLUSTER="cluster-gke-${ENVIRONMENT_LOWER}"               >> $GITHUB_ENV
+          echo PROJECT_ID="matrix-gke-${ENVIRONMENT_LOWER}"                 >> $GITHUB_ENV
+          echo REGISTRY_HOSTNAME="gcr.io/${PROJECT_ID}"   >> $GITHUB_ENV
+          echo WORKLOAD_IDENTITY_PROVIDER="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"       >> $GITHUB_ENV
+          echo SERVICE_ACCOUNT="github-actions@matrix-gke-${ENVIRONMENT_LOWER}.iam.gserviceaccount.com"                                                          >> $GITHUB_ENV
+
+          echo ENVIRONMENT_LOWER="${ENVIRONMENT_LOWER}"               >> $GITHUB_ENV
+          echo APP_NAME="${inputs.appName}"                           >> $GITHUB_ENV
+          echo APP_IMAGE="${GITHUB_REPOSITORY,,}"    >> $GITHUB_ENV
+          echo APP_TAG="${GITHUB_SHA:0:8}-${GITHUB_RUN_NUMBER}"       >> $GITHUB_ENV
+  
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - id: "auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v1"
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+
+      - name: configure Docker
+        run: |
+          gcloud auth configure-docker us-east1-docker.pkg.dev
+      
+      - name: get secrets
+        run: |
+          gcloud secrets versions access latest --secret="$APP_NAME" > app-config.txt
+          gcloud secrets versions access latest --secret="nexus-settings" > nexus-settings.txt
+
+      - name: get ssl certificate
+        if: inputs.sslCertificate
+        run: |
+           gcloud secrets versions access latest --secret="cert-$APP_NAME" | base64 -d > certs.txt
+           sed -n '/SERVER_CA/,/SERVER_CA/{/SERVER_CA/b;/SERVER_CA/b;p}' certs.txt > server-ca.pem
+           sed -n '/CLIENT_KEY/,/CLIENT_KEY/{/CLIENT_KEY/b;/CLIENT_KEY/b;p}' certs.txt > client-key.pem
+           sed -n '/CLIENT_CERT/,/CLIENT_CERT/{/CLIENT_CERT/b;/CLIENT_CERT/b;p}' certs.txt > client-cert.pem
+           sed -n '/KEYSTORE_PASSWORD/,/KEYSTORE_PASSWORD/{/KEYSTORE_PASSWORD/b;/KEYSTORE_PASSWORD/b;p}' certs.txt > keystore-passwork.txt
+            
+           
+      - name: create settings.xml
+        run: |
+          cat nexus-settings.txt | base64 -d >> settings.xml
+
+      - name: configure app
+        id: configure-app
+        run: |
+          echo "environment=${{ env.ENVIRONMENT_LOWER }}" >> $GITHUB_OUTPUT
+          echo "name=${{ env.APP_NAME }}"                 >> $GITHUB_OUTPUT
+          echo "revision=${{ env.APP_REVISION }}"         >> $GITHUB_OUTPUT
+          echo "image=${{ env.APP_IMAGE }}"               >> $GITHUB_OUTPUT
+          echo "tag=${{ env.APP_TAG }}"                   >> $GITHUB_OUTPUT
+          echo "kube_config=${{ env.KUBE_CONFIG }}"       >> $GITHUB_OUTPUT
+
+      - name: configure values file
+        id: setup-values-file
+        run: |
+          cp .ci/${ENVIRONMENT_LOWER}-values.yaml .ci/values.yaml
+          
+      - name: make yaml cfg plain
+        id: parseVars
+        run: |
+          wget -nv -q https://github.com/mikefarah/yq/releases/download/${{ env.YQ_VERSION }}/${{ env.YQ_BINARY }} -O yq
+          chmod +x yq
+          cat app-config.txt | base64 -d >> .content
+          S_ENCODING=$(file -b --mime-encoding .content)
+          D_ENCODING='UTF-8//TRANSLIT'
+          iconv -f ${S_ENCODING^^} -t ${D_ENCODING} .content -o .content
+          echo '.. | select(. == "*") | {(path | . as $x | (.[] | select((. | tag) == "!!int") |= (["[", ., "]"] | join(""))) | $x | join(".") | sub(".\[", "[")): .} ' > .expression
+          yq e --no-colors --no-doc --from-file .expression .content > .result
+          RESULT="$( cat .result | base64 -w0 )"
+          echo "result=${RESULT}" >> $GITHUB_OUTPUT
+          rm -r app-config.txt
+
+      - name: pre-config newrelic     
+        run: |
+            if [ -f "newrelic.ini" ]; then
+              sed -i 's/app_name =.*/app_name = ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.ini
+              cat newrelic.ini
+            fi 
+            if [ -f "newrelic.yml" ]; then
+              sed -i 's/app_name:.*/app_name: ${{ steps.configure-app.outputs.name }} - ${{ steps.configure-app.outputs.environment }}/g' ./newrelic.yml
+              cat newrelic.yml
+            else
+              echo "arquivo não encrontado"
+            fi
+
+      - name: docker build
+        run: |
+          sed -i "s/ENV_LOWER/${ENVIRONMENT_LOWER}/" Dockerfile
+          sed -i "s/APP_NAME/${APP_NAME}/" Dockerfile
+          docker build \
+            --build-arg ${{ inputs.tokenName }}=${{ secrets.PACKAGES_TOKEN }} \
+            -t "us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME}:${{ env.APP_TAG }}" \
+            -t "us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME}:latest" \
+            .
+            
+      - name: docker push
+        run: docker push us-east1-docker.pkg.dev/${PROJECT_ID}/gke-images/${APP_NAME} --all-tags
+        
+      - name: install helm tool
+        uses: azure/setup-helm@v3
+        with:
+          version: ${{ env.HELM_VERSION }}
+          
+      - name: clone helms
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.CHART_REPOSITORY }}
+          ref: ${{ env.CHART_REVISION }}
+          path: ${{ env.CHART_PATH }}
+          token: ${{ secrets[env.CLONE_TOKEN] }}
+
+      - name: get kubeconfig
+        run: |
+          gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --region ${{ env.GKE_REGION }} --project ${{ env.PROJECT_ID }}
+          
+      - name: service account workload identity
+        run: |
+          gcloud iam service-accounts list | grep -q $APP_NAME || gcloud iam service-accounts create $APP_NAME
+
+      - name: install app
+        run: |
+          helm upgrade ${{ steps.configure-app.outputs.name }} \
+            ${{ env.CHART_PATH }}/${{ env.CHART_TYPE }} \
+            --atomic \
+            --install \
+            --wait \
+            --timeout 6m0s \
+            --namespace '${{ inputs.namespace }}' \
+            --values '${{ inputs.values }}' \
+            --set environment='${{ steps.configure-app.outputs.environment }}' \
+            --set image='us-east1-docker.pkg.dev/${{env.PROJECT_ID}}/gke-images/${{env.APP_NAME}}:${{ steps.configure-app.outputs.tag }}' \
+            --set repository='${{ github.repository }}' \
+            --set config='${{ steps.parseVars.outputs.result }}'
+          rm -r .ci/values.yaml
+
+      - name: Workload Identity binding
+        run: |
+          gcloud iam service-accounts add-iam-policy-binding $APP_NAME@${{ env.PROJECT_ID }}.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:${{ env.PROJECT_ID }}.svc.id.goog[${{ inputs.namespace }}/$APP_NAME]"
+          
