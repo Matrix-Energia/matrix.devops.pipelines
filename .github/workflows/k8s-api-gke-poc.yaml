@@ -79,7 +79,7 @@ jobs:
           echo SERVICE_ACCOUNT="github-actions@matrix-gke-${ENVIRONMENT_LOWER}.iam.gserviceaccount.com"                                                          >> $GITHUB_ENV
 
           echo ENVIRONMENT_LOWER="${ENVIRONMENT_LOWER}"               >> $GITHUB_ENV
-          echo APP_NAME="${inputs.appName}"                           >> $GITHUB_ENV
+          echo APP_NAME="${{inputs.appName}}"                           >> $GITHUB_ENV
           echo APP_IMAGE="${GITHUB_REPOSITORY,,}"    >> $GITHUB_ENV
           echo APP_TAG="${GITHUB_SHA:0:8}-${GITHUB_RUN_NUMBER}"       >> $GITHUB_ENV
   
