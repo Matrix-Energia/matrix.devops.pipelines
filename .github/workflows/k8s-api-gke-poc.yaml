@@ -67,6 +67,21 @@ jobs:
           echo "PROJECT_NUMBER=62196059690"            >> $GITHUB_ENV
           echo GKE_REGION="us-east1-b"                 >> $GITHUB_ENV
           
+      - name: hml
+        if:  github.ref_name == 'hml' || contains(github.ref_name, 'hml')
+        run: |
+          echo "ENVIRONMENT=HML" >> $GITHUB_ENV
+          echo "APP_REVISION=hml" >> $GITHUB_ENV
+          echo "PROJECT_NUMBER=892092479263" >> $GITHUB_ENV
+          echo GKE_REGION="us-east1-b"                 >> $GITHUB_ENV
+      - name: hml-k8s
+        if: github.ref_name == 'k8s-hml'
+        run: |
+          echo "ENVIRONMENT=HML" >> $GITHUB_ENV
+          echo "APP_REVISION=hml" >> $GITHUB_ENV
+          echo "PROJECT_NUMBER=892092479263" >> $GITHUB_ENV
+          echo GKE_REGION="us-east1-b"       >> $GITHUB_ENV      
+          
       - name: set-vars
         run: |
           ENVIRONMENT_LOWER="${ENVIRONMENT,,}"
