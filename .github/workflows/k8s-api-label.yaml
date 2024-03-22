@@ -44,7 +44,7 @@ jobs:
 
     steps:
       - name: check-if-right-label
-        if: ${{ github.event.label.name != 'deploy-dev' && github.event.label.name != 'deploy-hml' }}
+        if: ${{ github.event.label.name != 'deploy-dev-aks' && github.event.label.name != 'deploy-hml-aks' }}
         run: |
           echo "not a deploy label, so skipping it"
           exit 1
@@ -56,12 +56,12 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
       - name: labeled-deploy-dev
-        if: ${{ github.event.label.name == 'deploy-dev' }}
+        if: ${{ github.event.label.name == 'deploy-dev-aks' }}
         run: |
           echo "ENVIRONMENT=DEV" >> $GITHUB_ENV
           echo "APP_REVISION=dev" >> $GITHUB_ENV
       - name: labeled-deploy-hml
-        if: ${{ github.event.label.name == 'deploy-hml' }}
+        if: ${{ github.event.label.name == 'deploy-hml-aks' }}
         run: |
           echo "ENVIRONMENT=HML" >> $GITHUB_ENV
           echo "APP_REVISION=hml" >> $GITHUB_ENV
