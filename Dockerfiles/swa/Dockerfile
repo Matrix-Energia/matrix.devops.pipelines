@@ -4,5 +4,6 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./* 
 ADD TMP_OUT  ./
 COPY .env ./
+RUN source .env
 RUN apk add vim
 CMD [ "nginx", "-g", "daemon off;" ]
